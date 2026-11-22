@@ -1,0 +1,10 @@
+# Static cluster baseline applied by `capacity-lab bootstrap` (stage: base).
+# Order matters only for humans reading it; kubectl applies namespaces first.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespaces.yaml
+  - scheduling.yaml
+  - rbac.yaml
+  - networkpolicies.yaml
+  - admission.yaml

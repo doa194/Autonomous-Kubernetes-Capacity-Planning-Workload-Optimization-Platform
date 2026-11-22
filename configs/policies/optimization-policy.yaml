@@ -1,0 +1,76 @@
+# S19 optimization policy (revisioned). Every number here is a PROVISIONAL starting value
+# from S04/S19; S31 calibration may change it, which requires a new revision. Workload,
+# namespace and cluster overrides may only make a parameter stricter (tighten-only merge).
+schemaVersion: optimization-policy/v1alpha1
+policyId: demo-resource-governance
+revision: 1
+classification: Internal
+allowedActions: [cpu_request, memory_request, cpu_limit, memory_limit]
+allowedNamespaces: [workloads-critical, workloads-standard, workloads-batch]
+maxCandidates: 8
+cpuGridMillicores: 5
+memoryGridBytes: 1048576          # 1 MiB
+weights:
+  efficiency: 1.0
+  fit_benefit: 0.5
+  risk: 0.8
+  change_cost: 0.2
+  pareto_tolerance: 0.01
+classes:
+  Critical:
+    cpu_request_floor_m: 100
+    memory_request_floor_bytes: 134217728      # 128 MiB
+    cpu_margin: 0.5
+    memory_margin: 0.3
+    max_decrease_fraction: 0.25
+    max_increase_fraction: 1.0
+    require_forecast_for_downsize: true
+    p95_latency_ms_max: 150                    # S04 provisional W01 target
+    error_rate_max: 0.01
+    throttle_ratio_max: 0.10
+    min_slo_requests: 500
+    min_cpu_coverage: 0.95
+    min_memory_coverage: 0.95
+    max_memory_gap_seconds: 30
+  Standard:
+    cpu_request_floor_m: 50
+    memory_request_floor_bytes: 100663296      # 96 MiB
+    cpu_margin: 0.3
+    memory_margin: 0.25
+    max_decrease_fraction: 0.35
+    max_increase_fraction: 1.0
+    require_forecast_for_downsize: true
+    p95_latency_ms_max: 300                    # S04 provisional W02 target
+    error_rate_max: 0.02
+    throttle_ratio_max: 0.15
+    min_slo_requests: 300
+    min_cpu_coverage: 0.95
+    min_memory_coverage: 0.95
+    max_memory_gap_seconds: 30
+  Flexible:
+    cpu_request_floor_m: 50
+    memory_request_floor_bytes: 100663296
+    cpu_margin: 0.2
+    memory_margin: 0.2
+    max_decrease_fraction: 0.5
+    max_increase_fraction: 1.0
+    require_forecast_for_downsize: true
+    min_completion_rate: 0.99                  # S04 provisional W04 target
+    min_cpu_coverage: 0.95
+    min_memory_coverage: 0.95
+    max_memory_gap_seconds: 60
+  Opportunistic:
+    cpu_request_floor_m: 25
+    memory_request_floor_bytes: 67108864       # 64 MiB
+    cpu_margin: 0.15
+    memory_margin: 0.2
+    max_decrease_fraction: 0.5
+    max_increase_fraction: 1.0
+    require_forecast_for_downsize: true
+    min_completion_rate: 0.95
+    min_cpu_coverage: 0.9
+    min_memory_coverage: 0.9
+    max_memory_gap_seconds: 60
+workloadOverrides:
+  w03-memory-profile:
+    memory_margin: 0.35                        # spikes are the point of W03; keep extra tail margin

@@ -1,0 +1,10 @@
+# S24 governance policy (revisioned). States explicitly, per workload, whether a plan
+# backed only by deterministic B2 evidence may be approved for execution. When a workload
+# is absent or false, a full S16 three-agent review is required first (S24.3 layer H).
+schemaVersion: governance-policy/v1alpha1
+revision: 1
+deterministicOnlyExecutionAllowed:
+  w01-latency-api: false        # Critical: requires a completed advisory review
+  w02-burst-api: true
+  w03-memory-profile: true
+  w04-cpu-worker: true

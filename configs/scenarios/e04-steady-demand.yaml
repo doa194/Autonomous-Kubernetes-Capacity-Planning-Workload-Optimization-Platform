@@ -1,0 +1,19 @@
+# E04 (S05 §11, S26 §3): steady, light W04 demand. Runs back to back provide the continuous demand
+# that a governed change is analysed on (S14 history) and verified under (S26 baseline and
+# evaluation windows), so "before" and "after" load are comparable. Rates are provisional.
+apiVersion: capacity.lab/v1alpha1
+kind: ExperimentScenario
+metadata: {id: e04-steady-demand, revision: 1}
+spec:
+  targets: [{workloadId: w04-cpu-worker, profileRevision: 1, namespace: workloads-batch}]
+  execution: {seed: 42044, executionClass: moderate, mode: live, maxDurationSeconds: 3600, maxParallelDrivers: 1}
+  phases:
+    - {id: warmup, durationSeconds: 30, measurement: excluded,
+       actions: [{kind: httpTraffic, target: w04-cpu-worker, operation: task, model: constant, requestsPerSecond: 1, profile: light}]}
+    # Two identical measured phases: a single phase may last at most 30 minutes.
+    - {id: steady-a, durationSeconds: 1650, measurement: included,
+       actions: [{kind: httpTraffic, target: w04-cpu-worker, operation: task, model: constant, requestsPerSecond: 1, profile: light}]}
+    - {id: steady-b, durationSeconds: 1650, measurement: included,
+       actions: [{kind: httpTraffic, target: w04-cpu-worker, operation: task, model: constant, requestsPerSecond: 1, profile: light}]}
+    - {id: cooldown, durationSeconds: 30, measurement: excluded, actions: [{kind: idle}]}
+  safety: {maxInflightRequests: 8, requestTimeoutSeconds: 5, hostPressurePolicyRef: local-host-safe-v1}

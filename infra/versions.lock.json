@@ -1,0 +1,55 @@
+{
+  "schemaVersion": "capacity-lab-versions/v1",
+  "note": "Pinned third-party versions (S29). Manifest hashes were recorded when first downloaded (trust on first use) and are re-verified on every install; image digests are resolved and written to the release manifest at install time.",
+  "kind": {
+    "version": "v0.33.0",
+    "binarySha256": "4b22adaa135368c5a465d56bbd8e520cbea87272a06ca00b6078e7b81515c9fc",
+    "url": "https://github.com/kubernetes-sigs/kind/releases/download/v0.33.0/kind-windows-amd64"
+  },
+  "nodeImage": "kindest/node:v1.36.4@sha256:099e049362a1526b2db71494e1947aae99bd16290d7c895f2b7ea312e3cbfaed",
+  "manifests": {
+    "calico": {
+      "version": "v3.33.1",
+      "url": "https://raw.githubusercontent.com/projectcalico/calico/v3.33.1/manifests/calico.yaml",
+      "sha256": "3368e62807b949438842e31f46c9b6df741731b4c755d0a622dd062b2cb20495"
+    },
+    "certManager": {
+      "version": "v1.21.3",
+      "url": "https://github.com/cert-manager/cert-manager/releases/download/v1.21.3/cert-manager.yaml",
+      "sha256": "c04a51295adda2b1a775146751f973e787190778c7f35180861d9678876e5c74"
+    }
+  },
+  "charts": {
+    "vault": {
+      "repo": "https://helm.releases.hashicorp.com",
+      "chart": "hashicorp/vault",
+      "version": "0.34.1"
+    },
+    "externalSecrets": {
+      "repo": "https://charts.external-secrets.io",
+      "chart": "external-secrets/external-secrets",
+      "version": "2.15.0"
+    }
+  },
+  "images": {
+    "postgres": "pgvector/pgvector:0.8.1-pg17",
+    "prometheus": "quay.io/prometheus/prometheus:v3.16.0",
+    "kubeStateMetrics": "registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.20.0",
+    "grafana": "docker.io/grafana/grafana:13.3.1",
+    "keycloak": "quay.io/keycloak/keycloak:26.8.2",
+    "registry": "docker.io/library/registry:3",
+    "pythonBase": "python:3.13-slim",
+    "dotnetSdk": "mcr.microsoft.com/dotnet/sdk:10.0",
+    "dotnetRuntime": "mcr.microsoft.com/dotnet/aspnet:10.0"
+  },
+  "models": {
+    "generation": {
+      "name": "gemma4:e4b",
+      "source": "local Ollama (already present)"
+    },
+    "embedding": {
+      "name": "nomic-embed-text",
+      "source": "Ollama library"
+    }
+  }
+}

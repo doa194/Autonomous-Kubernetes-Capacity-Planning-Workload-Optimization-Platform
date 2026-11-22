@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="Common/Common.csproj" />
+  <Project Path="LatencyApi/LatencyApi.csproj" />
+  <Project Path="BurstApi/BurstApi.csproj" />
+  <Project Path="Tests/Tests.csproj" />
+</Solution>

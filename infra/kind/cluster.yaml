@@ -1,0 +1,43 @@
+# S03 accepted topology: one control plane + three workers on one physical Windows host.
+# worker  = platform pool (tainted), worker2 = experiment/general, worker3 = experiment/constrained.
+# The default CNI is disabled so Calico can enforce real NetworkPolicy.
+# Host access is localhost-only: 8443 operator API, 8444 Keycloak (OIDC), 8445 Grafana.
+# Images come from a local OCI registry (capacity-registry) so manifests can pin digests.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: capacity-lab
+networking:
+  disableDefaultCNI: true
+  podSubnet: "192.168.128.0/17"
+  serviceSubnet: "10.96.0.0/16"
+containerdConfigPatches:
+  - |-
+    [plugins."io.containerd.grpc.v1.cri".registry]
+      config_path = "/etc/containerd/certs.d"
+nodes:
+  - role: control-plane
+    labels:
+      capacity.lab/node-role: control-plane
+  - role: worker
+    labels:
+      capacity.lab/pool: platform
+    extraPortMappings:
+      - {containerPort: 30443, hostPort: 8443, listenAddress: "127.0.0.1", protocol: TCP}
+      - {containerPort: 30444, hostPort: 8444, listenAddress: "127.0.0.1", protocol: TCP}
+      - {containerPort: 30445, hostPort: 8445, listenAddress: "127.0.0.1", protocol: TCP}
+    kubeadmConfigPatches:
+      - |
+        kind: JoinConfiguration
+        nodeRegistration:
+          taints:
+            - key: capacity.lab/dedicated
+              value: platform
+              effect: NoSchedule
+  - role: worker
+    labels:
+      capacity.lab/pool: experiment
+      capacity.lab/profile: general
+  - role: worker
+    labels:
+      capacity.lab/pool: experiment
+      capacity.lab/profile: constrained

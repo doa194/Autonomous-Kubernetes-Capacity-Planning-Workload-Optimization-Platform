@@ -1,0 +1,22 @@
+# S15 inference profile. `qualified` stays false until `capacity-lab model qualify` has run
+# the local qualification (schema compliance, latency, embedding dimensions, adversarial
+# corpus) and recorded model digests. An unqualified profile makes advisory jobs finish as
+# `unavailable` (reason model_unqualified) — they never run on an unverified model.
+schemaVersion: inference-profile/v1alpha1
+profileId: local-cpu-gpu-compact
+revision: 1
+gatewayUrl: https://host.docker.internal:11500
+generationModel:
+  name: gemma4:e4b
+  digest: null
+embeddingModel:
+  name: nomic-embed-text
+  digest: null
+embeddingDimensions: 768
+maxPromptChars: 24000
+maxOutputTokens: 900
+numCtx: 8192
+timeoutSeconds: 180
+seed: 42
+qualified: false
+qualificationRef: null

@@ -1,0 +1,281 @@
+# S07 §3-4 ServiceAccount inventory and least-privilege Kubernetes RBAC.
+# Only two platform identities talk to the Kubernetes API at all:
+#   capacity-observer-sa  : read-only list/watch (no Secrets, no exec, no writes)
+#   capacity-executor-sa  : get/patch Deployments in the three demo namespaces only
+# RBAC cannot restrict JSON-patch FIELDS; the executor's typed adapter and the CEL policy
+# `capacity-executor-field-guard` (admission.yaml) close that gap independently.
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: capacity-api-sa, namespace: capacity-api}
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: capacity-observer-sa, namespace: capacity-core}
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: capacity-engine-sa, namespace: capacity-core}
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: capacity-governance-sa, namespace: capacity-core}
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: capacity-ai-sa, namespace: capacity-ai}
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: capacity-executor-sa, namespace: capacity-execution}
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: capacity-driver-sa, namespace: capacity-experiments}
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: w01-sa, namespace: workloads-critical}
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: w02-sa, namespace: workloads-standard}
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: w03-sa, namespace: workloads-standard}
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: w04-sa, namespace: workloads-batch}
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: w05-sa, namespace: workloads-batch}
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: w06-sa, namespace: workloads-batch}
+automountServiceAccountToken: false
+---
+# Host-side identities (S05/S07 §4.3): runner and watchdog get separate, narrow kubeconfigs
+# minted by capacity-lab. Neither inherits the kind admin context.
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: capacity-runner, namespace: capacity-system}
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: capacity-watchdog, namespace: capacity-system}
+automountServiceAccountToken: false
+---
+# ----------------------------------------------------------------------------- observer
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata: {name: capacity-observer-read}
+rules:
+  - apiGroups: [""]
+    resources: [nodes, namespaces, pods, resourcequotas, limitranges, events]
+    verbs: [get, list, watch]
+  - apiGroups: [apps]
+    resources: [deployments, replicasets, daemonsets, statefulsets]
+    verbs: [get, list, watch]
+  - apiGroups: [batch]
+    resources: [jobs, cronjobs]
+    verbs: [get, list, watch]
+  - apiGroups: [autoscaling]
+    resources: [horizontalpodautoscalers]
+    verbs: [get, list, watch]
+  - apiGroups: [policy]
+    resources: [poddisruptionbudgets]
+    verbs: [get, list, watch]
+  - apiGroups: [scheduling.k8s.io]
+    resources: [priorityclasses]
+    verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata: {name: capacity-observer-read}
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: capacity-observer-read}
+subjects: [{kind: ServiceAccount, name: capacity-observer-sa, namespace: capacity-core}]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: {name: host-safety-read, namespace: capacity-system}
+rules:
+  - apiGroups: [""]
+    resources: [configmaps]
+    resourceNames: [host-safety]
+    verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: host-safety-read, namespace: capacity-system}
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: Role, name: host-safety-read}
+subjects:
+  - {kind: ServiceAccount, name: capacity-observer-sa, namespace: capacity-core}
+  - {kind: ServiceAccount, name: capacity-executor-sa, namespace: capacity-execution}
+---
+# ----------------------------------------------------------------------------- executor
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata: {name: capacity-executor-demo}
+rules:
+  - apiGroups: [apps]
+    resources: [deployments]
+    verbs: [get, patch]
+  - apiGroups: [autoscaling]
+    resources: [horizontalpodautoscalers]
+    verbs: [list]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: capacity-executor-demo, namespace: workloads-critical}
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: capacity-executor-demo}
+subjects: [{kind: ServiceAccount, name: capacity-executor-sa, namespace: capacity-execution}]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: capacity-executor-demo, namespace: workloads-standard}
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: capacity-executor-demo}
+subjects: [{kind: ServiceAccount, name: capacity-executor-sa, namespace: capacity-execution}]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: capacity-executor-demo, namespace: workloads-batch}
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: capacity-executor-demo}
+subjects: [{kind: ServiceAccount, name: capacity-executor-sa, namespace: capacity-execution}]
+---
+# The executor derives the cluster incarnation from the kube-system namespace UID itself.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata: {name: capacity-incarnation-read}
+rules:
+  - apiGroups: [""]
+    resources: [namespaces]
+    resourceNames: [kube-system]
+    verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata: {name: capacity-incarnation-read}
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: capacity-incarnation-read}
+subjects: [{kind: ServiceAccount, name: capacity-executor-sa, namespace: capacity-execution}]
+---
+# ----------------------------------------------------------------------------- host runner
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: {name: experiment-runner, namespace: capacity-experiments}
+rules:
+  - apiGroups: [batch]
+    resources: [jobs]
+    verbs: [create, get, list, delete]
+  - apiGroups: [""]
+    resources: [configmaps, secrets]
+    verbs: [create, get, delete]
+  - apiGroups: [""]
+    resources: [pods, pods/log, resourcequotas]
+    verbs: [get, list]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: experiment-runner, namespace: capacity-experiments}
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: Role, name: experiment-runner}
+subjects: [{kind: ServiceAccount, name: capacity-runner, namespace: capacity-system}]
+---
+# Read-only view of demo workloads for preflight. No patch/update verbs anywhere: the runner
+# can never change a baseline Deployment's resources or replicas (S05 §8, S07-TEST-010).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata: {name: experiment-runner-demo-read}
+rules:
+  - apiGroups: [apps]
+    resources: [deployments]
+    verbs: [get, list]
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [get, list]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: experiment-runner-read, namespace: workloads-critical}
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: experiment-runner-demo-read}
+subjects: [{kind: ServiceAccount, name: capacity-runner, namespace: capacity-system}]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: experiment-runner-read, namespace: workloads-standard}
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: experiment-runner-demo-read}
+subjects: [{kind: ServiceAccount, name: capacity-runner, namespace: capacity-system}]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: experiment-runner-read, namespace: workloads-batch}
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: experiment-runner-demo-read}
+subjects: [{kind: ServiceAccount, name: capacity-runner, namespace: capacity-system}]
+---
+# W05/W06 batch runs: create and delete Jobs in workloads-batch, and read ONLY the two installed
+# templates they are built from. No update/patch: an existing Job is never modified.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: {name: experiment-runner-batch, namespace: workloads-batch}
+rules:
+  - apiGroups: [batch]
+    resources: [jobs]
+    verbs: [create, get, list, delete]
+  - apiGroups: [batch]
+    resources: [cronjobs]
+    resourceNames: [analytics-processor]
+    verbs: [get]
+  - apiGroups: [""]
+    resources: [configmaps]
+    resourceNames: [w06-job-template]
+    verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: experiment-runner-batch, namespace: workloads-batch}
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: Role, name: experiment-runner-batch}
+subjects: [{kind: ServiceAccount, name: capacity-runner, namespace: capacity-system}]
+---
+# ----------------------------------------------------------------------------- watchdog
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: {name: watchdog-signal, namespace: capacity-system}
+rules:
+  - apiGroups: [""]
+    resources: [configmaps]
+    resourceNames: [host-safety]
+    verbs: [get, patch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: watchdog-signal, namespace: capacity-system}
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: Role, name: watchdog-signal}
+subjects: [{kind: ServiceAccount, name: capacity-watchdog, namespace: capacity-system}]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: {name: watchdog-cleanup, namespace: capacity-experiments}
+rules:
+  - apiGroups: [batch]
+    resources: [jobs]
+    verbs: [get, list, delete]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: watchdog-cleanup, namespace: capacity-experiments}
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: Role, name: watchdog-cleanup}
+subjects: [{kind: ServiceAccount, name: capacity-watchdog, namespace: capacity-system}]

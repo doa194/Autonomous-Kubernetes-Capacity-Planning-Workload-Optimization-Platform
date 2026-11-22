@@ -1,0 +1,128 @@
+# S03 namespace map plus the S05-approved `capacity-experiments` addendum (S03/S07 addendum
+# obligation). Pod Security Admission `restricted` is enforced everywhere we run code; the
+# only exemption is `capacity-system` at `baseline`, which hosts third-party controllers
+# listed in docs/security.md's exception registry. Namespace grouping is not authorization:
+# ServiceAccounts, RBAC, NetworkPolicy and app-level checks still apply inside each one.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: capacity-api
+  labels:
+    capacity.lab/managed: "true"
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: capacity-core
+  labels:
+    capacity.lab/managed: "true"
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: capacity-ai
+  labels:
+    capacity.lab/managed: "true"
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: capacity-execution
+  labels:
+    capacity.lab/managed: "true"
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: capacity-data
+  labels:
+    capacity.lab/managed: "true"
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: capacity-observability
+  labels:
+    capacity.lab/managed: "true"
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: capacity-identity
+  labels:
+    capacity.lab/managed: "true"
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: capacity-system
+  labels:
+    capacity.lab/managed: "true"
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: workloads-critical
+  labels:
+    capacity.lab/managed: "true"
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+    capacity.lab/demo: "true"
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: workloads-standard
+  labels:
+    capacity.lab/managed: "true"
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+    capacity.lab/demo: "true"
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: workloads-batch
+  labels:
+    capacity.lab/managed: "true"
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+    capacity.lab/demo: "true"
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: capacity-experiments
+  labels:
+    capacity.lab/managed: "true"
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+    capacity.lab/experiments: "true"

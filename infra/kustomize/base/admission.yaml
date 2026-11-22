@@ -1,0 +1,129 @@
+# S08 §7 native CEL ValidatingAdmissionPolicies. These are enforced by the API server for
+# EVERY client — a bypassed Python validator, a raw kubectl call or a stolen credential hits
+# the same rules. PSA Restricted (namespaces.yaml) covers privilege/escalation/seccomp;
+# these add what PSA does not: read-only root FS, explicit resources, digest-pinned images,
+# no token automount, the experiment Job template, and the executor's field allowlist.
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata: {name: capacity-pod-hardening}
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - {apiGroups: [""], apiVersions: [v1], operations: [CREATE, UPDATE], resources: [pods]}
+  validations:
+    - expression: "object.spec.containers.all(c, has(c.securityContext) && has(c.securityContext.readOnlyRootFilesystem) && c.securityContext.readOnlyRootFilesystem == true)"
+      message: "POL-POD-002: every container must use a read-only root filesystem"
+    - expression: "object.spec.containers.all(c, has(c.resources) && has(c.resources.requests) && has(c.resources.limits) && 'cpu' in c.resources.requests && 'memory' in c.resources.requests && 'cpu' in c.resources.limits && 'memory' in c.resources.limits)"
+      message: "POL-POD-003: explicit CPU and memory requests and limits are required"
+    - expression: "object.spec.containers.all(c, c.image.contains('@sha256:'))"
+      message: "POL-IMG-001: images must be pinned by digest"
+    - expression: "!has(object.spec.volumes) || object.spec.volumes.all(v, !has(v.hostPath))"
+      message: "POL-POD-004: hostPath volumes are not allowed"
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata: {name: capacity-pod-hardening}
+spec:
+  policyName: capacity-pod-hardening
+  validationActions: [Deny, Audit]
+  matchResources:
+    namespaceSelector:
+      matchExpressions:
+        - {key: kubernetes.io/metadata.name, operator: In,
+           values: [capacity-api, capacity-core, capacity-ai, capacity-execution, workloads-critical,
+                    workloads-standard, workloads-batch, capacity-experiments]}
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata: {name: capacity-no-token-automount}
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - {apiGroups: [""], apiVersions: [v1], operations: [CREATE, UPDATE], resources: [pods]}
+  validations:
+    - expression: "has(object.spec.automountServiceAccountToken) && object.spec.automountServiceAccountToken == false"
+      message: "POL-POD-005: demo and experiment Pods must not mount a ServiceAccount token"
+    - expression: "!has(object.spec.volumes) || object.spec.volumes.all(v, !has(v.projected) || !has(v.projected.sources) || v.projected.sources.all(s, !has(s.serviceAccountToken)))"
+      message: "POL-POD-005: projected ServiceAccount tokens are not allowed here"
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata: {name: capacity-no-token-automount}
+spec:
+  policyName: capacity-no-token-automount
+  validationActions: [Deny, Audit]
+  matchResources:
+    namespaceSelector:
+      matchExpressions:
+        - {key: kubernetes.io/metadata.name, operator: In,
+           values: [workloads-critical, workloads-standard, workloads-batch, capacity-experiments]}
+---
+# POL-EXP-001: the only Jobs allowed in capacity-experiments are bounded load drivers built
+# from the approved template: right SA, experiment pool, no tolerations, finite deadline.
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata: {name: capacity-experiment-job-template}
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - {apiGroups: [batch], apiVersions: [v1], operations: [CREATE, UPDATE], resources: [jobs]}
+  validations:
+    - expression: "has(object.metadata.labels) && object.metadata.labels['capacity.lab/template'] == 'load-driver-v1'"
+      message: "POL-EXP-001: unknown experiment Job template"
+    - expression: "object.spec.template.spec.serviceAccountName == 'capacity-driver-sa'"
+      message: "POL-EXP-001: drivers must run as capacity-driver-sa"
+    - expression: "has(object.spec.template.spec.nodeSelector) && object.spec.template.spec.nodeSelector['capacity.lab/pool'] == 'experiment'"
+      message: "POL-EXP-001: drivers must run on the experiment pool"
+    - expression: "!has(object.spec.template.spec.tolerations) || size(object.spec.template.spec.tolerations) == 0"
+      message: "POL-EXP-001: drivers may not tolerate the platform taint"
+    - expression: "has(object.spec.activeDeadlineSeconds) && object.spec.activeDeadlineSeconds <= 3600 && has(object.spec.ttlSecondsAfterFinished)"
+      message: "POL-EXP-001: drivers need a finite deadline and TTL"
+    - expression: "object.spec.template.spec.containers.all(c, c.image.startsWith('capacity-registry:5000/capacity-platform@sha256:') || c.image.startsWith('localhost:5001/capacity-platform@sha256:'))"
+      message: "POL-EXP-001: drivers must use the pinned platform image"
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata: {name: capacity-experiment-job-template}
+spec:
+  policyName: capacity-experiment-job-template
+  validationActions: [Deny, Audit]
+  matchResources:
+    namespaceSelector:
+      matchLabels: {kubernetes.io/metadata.name: capacity-experiments}
+---
+# POL-EXEC-001: when the executor updates a demo Deployment, only container CPU/memory
+# requests/limits may differ. Replicas, images, labels, SA, scheduling and everything else
+# must be byte-for-byte unchanged. RBAC `patch` alone could not express this.
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata: {name: capacity-executor-field-guard}
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - {apiGroups: [apps], apiVersions: [v1], operations: [UPDATE], resources: [deployments]}
+  matchConditions:
+    - name: executor-only
+      expression: "request.userInfo.username == 'system:serviceaccount:capacity-execution:capacity-executor-sa'"
+  validations:
+    - expression: "object.spec.replicas == oldObject.spec.replicas"
+      message: "POL-EXEC-001: executor may not change replicas"
+    - expression: "object.metadata.labels == oldObject.metadata.labels && object.spec.template.metadata == oldObject.spec.template.metadata"
+      message: "POL-EXEC-001: executor may not change labels or template metadata"
+    - expression: "size(object.spec.template.spec.containers) == size(oldObject.spec.template.spec.containers) && object.spec.template.spec.containers.all(c, oldObject.spec.template.spec.containers.exists(o, o.name == c.name && o.image == c.image && (has(o.command) ? (has(c.command) && o.command == c.command) : !has(c.command)) && (has(o.env) ? (has(c.env) && o.env == c.env) : !has(c.env))))"
+      message: "POL-EXEC-001: executor may not change container identity, image, command or env"
+    - expression: "object.spec.template.spec.serviceAccountName == oldObject.spec.template.spec.serviceAccountName && (has(object.spec.template.spec.nodeSelector) == has(oldObject.spec.template.spec.nodeSelector)) && (!has(object.spec.template.spec.nodeSelector) || object.spec.template.spec.nodeSelector == oldObject.spec.template.spec.nodeSelector)"
+      message: "POL-EXEC-001: executor may not change identity or scheduling"
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata: {name: capacity-executor-field-guard}
+spec:
+  policyName: capacity-executor-field-guard
+  validationActions: [Deny, Audit]
+  matchResources:
+    namespaceSelector:
+      matchLabels: {capacity.lab/demo: "true"}

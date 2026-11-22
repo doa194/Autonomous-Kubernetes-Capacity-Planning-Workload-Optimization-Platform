@@ -1,0 +1,14 @@
+# E03 (S05 §11): W03 steady then bounded spike; exclusive because it stresses memory.
+apiVersion: capacity.lab/v1alpha1
+kind: ExperimentScenario
+metadata: {id: e03-memory-spike, revision: 1}
+spec:
+  targets: [{workloadId: w03-memory-profile, profileRevision: 1, namespace: workloads-standard}]
+  execution: {seed: 42033, executionClass: exclusive, mode: live, maxDurationSeconds: 900, maxParallelDrivers: 1}
+  phases:
+    - {id: steady, durationSeconds: 300, measurement: included,
+       actions: [{kind: httpTraffic, target: w03-memory-profile, operation: profileRun, model: constant, requestsPerSecond: 0.05, profile: steady}]}
+    - {id: spike, durationSeconds: 120, measurement: included,
+       actions: [{kind: httpTraffic, target: w03-memory-profile, operation: profileRun, model: constant, requestsPerSecond: 0.05, profile: spike}]}
+    - {id: cooldown, durationSeconds: 60, measurement: excluded, actions: [{kind: idle}]}
+  safety: {maxInflightRequests: 2, requestTimeoutSeconds: 10, hostPressurePolicyRef: local-host-safe-v1}

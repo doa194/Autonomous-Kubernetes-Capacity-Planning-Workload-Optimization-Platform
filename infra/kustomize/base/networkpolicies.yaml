@@ -1,0 +1,437 @@
+# S03 §5.1 / S07 §7.2 network baseline: default-deny ingress+egress in every managed
+# namespace, DNS allowed, then one explicit rule per approved flow. Rules that need live
+# addresses (Kubernetes API server, host Ollama gateway, NodePort sources) are rendered by
+# `capacity-lab` into network-dynamic.yaml after it discovers the kind node network.
+# NetworkPolicy is reachability only; every protected endpoint still authenticates callers.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: default-deny, namespace: capacity-api}
+spec: {podSelector: {}, policyTypes: [Ingress, Egress]}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: default-deny, namespace: capacity-core}
+spec: {podSelector: {}, policyTypes: [Ingress, Egress]}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: default-deny, namespace: capacity-ai}
+spec: {podSelector: {}, policyTypes: [Ingress, Egress]}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: default-deny, namespace: capacity-execution}
+spec: {podSelector: {}, policyTypes: [Ingress, Egress]}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: default-deny, namespace: capacity-data}
+spec: {podSelector: {}, policyTypes: [Ingress, Egress]}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: default-deny, namespace: capacity-observability}
+spec: {podSelector: {}, policyTypes: [Ingress, Egress]}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: default-deny, namespace: capacity-identity}
+spec: {podSelector: {}, policyTypes: [Ingress, Egress]}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: default-deny, namespace: workloads-critical}
+spec: {podSelector: {}, policyTypes: [Ingress, Egress]}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: default-deny, namespace: workloads-standard}
+spec: {podSelector: {}, policyTypes: [Ingress, Egress]}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: default-deny, namespace: workloads-batch}
+spec: {podSelector: {}, policyTypes: [Ingress, Egress]}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: default-deny, namespace: capacity-experiments}
+spec: {podSelector: {}, policyTypes: [Ingress, Egress]}
+---
+# ------------------------------------------------------------------ DNS for every namespace
+# (one policy per namespace; NetworkPolicy has no cross-namespace "all namespaces" object)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: allow-dns, namespace: capacity-api}
+spec: &dns
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+    - to: [{namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: kube-system}},
+             podSelector: {matchLabels: {k8s-app: kube-dns}}}]
+      ports: [{protocol: UDP, port: 53}, {protocol: TCP, port: 53}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: allow-dns, namespace: capacity-core}
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+    - to: [{namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: kube-system}},
+             podSelector: {matchLabels: {k8s-app: kube-dns}}}]
+      ports: [{protocol: UDP, port: 53}, {protocol: TCP, port: 53}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: allow-dns, namespace: capacity-ai}
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+    - to: [{namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: kube-system}},
+             podSelector: {matchLabels: {k8s-app: kube-dns}}}]
+      ports: [{protocol: UDP, port: 53}, {protocol: TCP, port: 53}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: allow-dns, namespace: capacity-execution}
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+    - to: [{namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: kube-system}},
+             podSelector: {matchLabels: {k8s-app: kube-dns}}}]
+      ports: [{protocol: UDP, port: 53}, {protocol: TCP, port: 53}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: allow-dns, namespace: capacity-data}
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+    - to: [{namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: kube-system}},
+             podSelector: {matchLabels: {k8s-app: kube-dns}}}]
+      ports: [{protocol: UDP, port: 53}, {protocol: TCP, port: 53}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: allow-dns, namespace: capacity-observability}
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+    - to: [{namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: kube-system}},
+             podSelector: {matchLabels: {k8s-app: kube-dns}}}]
+      ports: [{protocol: UDP, port: 53}, {protocol: TCP, port: 53}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: allow-dns, namespace: capacity-identity}
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+    - to: [{namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: kube-system}},
+             podSelector: {matchLabels: {k8s-app: kube-dns}}}]
+      ports: [{protocol: UDP, port: 53}, {protocol: TCP, port: 53}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: allow-dns, namespace: workloads-critical}
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+    - to: [{namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: kube-system}},
+             podSelector: {matchLabels: {k8s-app: kube-dns}}}]
+      ports: [{protocol: UDP, port: 53}, {protocol: TCP, port: 53}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: allow-dns, namespace: workloads-standard}
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+    - to: [{namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: kube-system}},
+             podSelector: {matchLabels: {k8s-app: kube-dns}}}]
+      ports: [{protocol: UDP, port: 53}, {protocol: TCP, port: 53}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: allow-dns, namespace: workloads-batch}
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+    - to: [{namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: kube-system}},
+             podSelector: {matchLabels: {k8s-app: kube-dns}}}]
+      ports: [{protocol: UDP, port: 53}, {protocol: TCP, port: 53}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: allow-dns, namespace: capacity-experiments}
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+    - to: [{namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: kube-system}},
+             podSelector: {matchLabels: {k8s-app: kube-dns}}}]
+      ports: [{protocol: UDP, port: 53}, {protocol: TCP, port: 53}]
+---
+# ------------------------------------------------------------------ database: only schema owners
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: postgres-clients, namespace: capacity-data}
+spec:
+  podSelector: {matchLabels: {app.kubernetes.io/name: postgres}}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - {namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: capacity-api}}}
+        - {namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: capacity-core}}}
+        - {namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: capacity-ai}}}
+        - {namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: capacity-execution}}}
+        - {namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: capacity-identity}},
+           podSelector: {matchLabels: {app.kubernetes.io/name: keycloak}}}
+      ports: [{protocol: TCP, port: 5432}]
+---
+# ------------------------------------------------------------------ platform service flows
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: api-egress, namespace: capacity-api}
+spec:
+  podSelector: {matchLabels: {app.kubernetes.io/name: capacity-api}}
+  policyTypes: [Egress]
+  egress:
+    - to: [{namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: capacity-data}},
+             podSelector: {matchLabels: {app.kubernetes.io/name: postgres}}}]
+      ports: [{protocol: TCP, port: 5432}]
+    - to: [{namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: capacity-core}},
+             podSelector: {matchLabels: {app.kubernetes.io/name: capacity-governance}}}]
+      ports: [{protocol: TCP, port: 8444}]
+    - to: [{namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: capacity-ai}},
+             podSelector: {matchLabels: {app.kubernetes.io/name: capacity-ai}}}]
+      ports: [{protocol: TCP, port: 8443}]
+    - to: [{namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: capacity-identity}},
+             podSelector: {matchLabels: {app.kubernetes.io/name: keycloak}}}]
+      ports: [{protocol: TCP, port: 8443}]
+---
+# Prometheus scrapes the API's /metrics; host users arrive through the rendered NodePort rule.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: api-metrics-ingress, namespace: capacity-api}
+spec:
+  podSelector: {matchLabels: {app.kubernetes.io/name: capacity-api}}
+  policyTypes: [Ingress]
+  ingress:
+    - from: [{namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: capacity-observability}},
+               podSelector: {matchLabels: {app.kubernetes.io/name: prometheus}}}]
+      ports: [{protocol: TCP, port: 8443}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: core-flows, namespace: capacity-core}
+spec:
+  podSelector: {matchExpressions: [{key: app.kubernetes.io/name, operator: In,
+                                    values: [capacity-observer, capacity-engine, capacity-governance]}]}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from: [{namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: capacity-observability}},
+               podSelector: {matchLabels: {app.kubernetes.io/name: prometheus}}}]
+      ports: [{protocol: TCP, port: 8443}]
+  egress:
+    - to: [{namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: capacity-data}},
+             podSelector: {matchLabels: {app.kubernetes.io/name: postgres}}}]
+      ports: [{protocol: TCP, port: 5432}]
+    - to: [{namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: capacity-identity}},
+             podSelector: {matchLabels: {app.kubernetes.io/name: keycloak}}}]
+      ports: [{protocol: TCP, port: 8443}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: governance-from-api, namespace: capacity-core}
+spec:
+  podSelector: {matchLabels: {app.kubernetes.io/name: capacity-governance}}
+  policyTypes: [Ingress]
+  ingress:
+    - from: [{namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: capacity-api}},
+               podSelector: {matchLabels: {app.kubernetes.io/name: capacity-api}}}]
+      ports: [{protocol: TCP, port: 8444}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: engine-flows, namespace: capacity-core}
+spec:
+  podSelector: {matchLabels: {app.kubernetes.io/name: capacity-engine}}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from: [{namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: capacity-ai}},
+               podSelector: {matchLabels: {app.kubernetes.io/name: capacity-ai}}}]
+      ports: [{protocol: TCP, port: 8443}]
+  egress:
+    - to: [{namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: capacity-observability}},
+             podSelector: {matchLabels: {app.kubernetes.io/name: prometheus}}}]
+      ports: [{protocol: TCP, port: 9090}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: ai-flows, namespace: capacity-ai}
+spec:
+  podSelector: {matchLabels: {app.kubernetes.io/name: capacity-ai}}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from: [{namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: capacity-api}},
+               podSelector: {matchLabels: {app.kubernetes.io/name: capacity-api}}},
+             {namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: capacity-observability}},
+               podSelector: {matchLabels: {app.kubernetes.io/name: prometheus}}}]
+      ports: [{protocol: TCP, port: 8443}]
+  egress:
+    # Explicitly NOT allowed: Kubernetes API, executor, governance writes, demo workloads.
+    - to: [{namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: capacity-data}},
+             podSelector: {matchLabels: {app.kubernetes.io/name: postgres}}}]
+      ports: [{protocol: TCP, port: 5432}]
+    - to: [{namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: capacity-core}},
+             podSelector: {matchLabels: {app.kubernetes.io/name: capacity-engine}}}]
+      ports: [{protocol: TCP, port: 8443}]
+    - to: [{namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: capacity-identity}},
+             podSelector: {matchLabels: {app.kubernetes.io/name: keycloak}}}]
+      ports: [{protocol: TCP, port: 8443}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: executor-flows, namespace: capacity-execution}
+spec:
+  podSelector: {matchLabels: {app.kubernetes.io/name: capacity-executor}}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from: [{namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: capacity-observability}},
+               podSelector: {matchLabels: {app.kubernetes.io/name: prometheus}}}]
+      ports: [{protocol: TCP, port: 8443}]
+  egress:
+    - to: [{namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: capacity-data}},
+             podSelector: {matchLabels: {app.kubernetes.io/name: postgres}}}]
+      ports: [{protocol: TCP, port: 5432}]
+    - to: [{namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: capacity-observability}},
+             podSelector: {matchLabels: {app.kubernetes.io/name: prometheus}}}]
+      ports: [{protocol: TCP, port: 9090}]
+---
+# ------------------------------------------------------------------ observability
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: prometheus-flows, namespace: capacity-observability}
+spec:
+  podSelector: {matchLabels: {app.kubernetes.io/name: prometheus}}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - {namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: capacity-core}},
+           podSelector: {matchLabels: {app.kubernetes.io/name: capacity-engine}}}
+        - {namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: capacity-execution}},
+           podSelector: {matchLabels: {app.kubernetes.io/name: capacity-executor}}}
+        - {podSelector: {matchLabels: {app.kubernetes.io/name: grafana}}}
+      ports: [{protocol: TCP, port: 9090}]
+  egress:
+    - to: [{podSelector: {matchLabels: {app.kubernetes.io/name: kube-state-metrics}}}]
+      ports: [{protocol: TCP, port: 8080}]
+    - to: [{namespaceSelector: {matchLabels: {capacity.lab/demo: "true"}}}]
+      ports: [{protocol: TCP, port: 8080}]
+    - to:
+        - {namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: capacity-api}}}
+        - {namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: capacity-core}}}
+        - {namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: capacity-ai}}}
+        - {namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: capacity-execution}}}
+      ports: [{protocol: TCP, port: 8443}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: ksm-flows, namespace: capacity-observability}
+spec:
+  podSelector: {matchLabels: {app.kubernetes.io/name: kube-state-metrics}}
+  policyTypes: [Ingress]
+  ingress:
+    - from: [{podSelector: {matchLabels: {app.kubernetes.io/name: prometheus}}}]
+      ports: [{protocol: TCP, port: 8080}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: grafana-flows, namespace: capacity-observability}
+spec:
+  podSelector: {matchLabels: {app.kubernetes.io/name: grafana}}
+  policyTypes: [Egress]
+  egress:
+    - to: [{podSelector: {matchLabels: {app.kubernetes.io/name: prometheus}}}]
+      ports: [{protocol: TCP, port: 9090}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: keycloak-flows, namespace: capacity-identity}
+spec:
+  podSelector: {matchLabels: {app.kubernetes.io/name: keycloak}}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - {namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: capacity-api}}}
+        - {namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: capacity-core}}}
+        - {namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: capacity-ai}}}
+      ports: [{protocol: TCP, port: 8443}]
+  egress:
+    - to: [{namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: capacity-data}},
+             podSelector: {matchLabels: {app.kubernetes.io/name: postgres}}}]
+      ports: [{protocol: TCP, port: 5432}]
+---
+# ------------------------------------------------------------------ demo workloads and drivers
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: demo-ingress, namespace: workloads-critical}
+spec:
+  podSelector: {matchLabels: {capacity.lab/demo-service: "true"}}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - {namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: capacity-experiments}},
+           podSelector: {matchLabels: {capacity.lab/template: load-driver-v1}}}
+        - {namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: capacity-observability}},
+           podSelector: {matchLabels: {app.kubernetes.io/name: prometheus}}}
+      ports: [{protocol: TCP, port: 8080}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: demo-ingress, namespace: workloads-standard}
+spec:
+  podSelector: {matchLabels: {capacity.lab/demo-service: "true"}}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - {namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: capacity-experiments}},
+           podSelector: {matchLabels: {capacity.lab/template: load-driver-v1}}}
+        - {namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: capacity-observability}},
+           podSelector: {matchLabels: {app.kubernetes.io/name: prometheus}}}
+      ports: [{protocol: TCP, port: 8080}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: demo-ingress, namespace: workloads-batch}
+spec:
+  podSelector: {matchLabels: {capacity.lab/demo-service: "true"}}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - {namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: capacity-experiments}},
+           podSelector: {matchLabels: {capacity.lab/template: load-driver-v1}}}
+        - {namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: capacity-observability}},
+           podSelector: {matchLabels: {app.kubernetes.io/name: prometheus}}}
+      ports: [{protocol: TCP, port: 8080}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: driver-egress, namespace: capacity-experiments}
+spec:
+  podSelector: {matchLabels: {capacity.lab/template: load-driver-v1}}
+  policyTypes: [Egress]
+  egress:
+    - to: [{namespaceSelector: {matchLabels: {capacity.lab/demo: "true"}},
+             podSelector: {matchLabels: {capacity.lab/demo-service: "true"}}}]
+      ports: [{protocol: TCP, port: 8080}]

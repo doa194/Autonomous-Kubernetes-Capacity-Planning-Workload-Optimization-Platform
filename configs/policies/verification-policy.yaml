@@ -1,0 +1,34 @@
+# S26 verification policy (revisioned). Thresholds are PROVISIONAL S04 targets; windows are
+# short lab values and are NOT long-term operational evidence. A threshold left empty means
+# the guardrail is not evaluated for that workload (not that it passes by default).
+schemaVersion: verification-policy/v1alpha1
+policyId: demo-resource-verification
+revision: 1
+loadComparabilityTolerance: 0.2
+rolloutDeadlineSeconds: 300
+baselineSeconds: 900
+stabilizationSeconds: 120
+evaluationSeconds: 900
+maxInverseAttempts: 1
+workloads:
+  w01-latency-api:
+    p95_latency_ms_max: 150
+    error_rate_max: 0.01
+    max_oom_restarts: 0
+    min_availability: 0.99
+    min_coverage: 0.9
+  w02-burst-api:
+    p95_latency_ms_max: 300
+    error_rate_max: 0.02
+    max_oom_restarts: 0
+    min_availability: 0.99
+    min_coverage: 0.9
+  w03-memory-profile:
+    max_oom_restarts: 0
+    min_availability: 0.99
+    min_coverage: 0.9
+  w04-cpu-worker:
+    max_oom_restarts: 0
+    max_queue_growth_per_min: 0.5
+    min_availability: 0.99
+    min_coverage: 0.9

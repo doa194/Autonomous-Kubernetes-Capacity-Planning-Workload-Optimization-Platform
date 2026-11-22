@@ -1,0 +1,92 @@
+# Python packaging for the platform monorepo.
+# One distribution holds the six service packages, the shared contracts and
+# the host tools (capacityctl, capacity-lab, scenario runner, watchdog).
+# Each service still runs as its own process and Deployment; see docs/architecture.md.
+
+[project]
+name = "capacity-platform"
+version = "0.1.0"
+description = "Local AIOps Kubernetes capacity planning and governed workload optimization platform"
+readme = "README.md"
+requires-python = ">=3.13,<3.14"
+license = { text = "Proprietary" }
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn>=0.32",
+    "pydantic>=2.9",
+    "httpx>=0.27",
+    "psycopg[binary]>=3.2",
+    "pyjwt[crypto]>=2.9",
+    "cryptography>=43",
+    "typer>=0.12",
+    "pyyaml>=6.0",
+    "numpy>=2.1",
+    "kubernetes>=31.0",
+    "prometheus-client>=0.21",
+]
+
+[project.optional-dependencies]
+# Microsoft Agent Framework is only needed by the `ai` service.
+ai = ["agent-framework-core>=1.19,<2"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-timeout>=2.3",
+    "testcontainers[postgres]>=4.8",
+    "ruff>=0.7",
+    "mypy>=1.13",
+    "types-PyYAML",
+]
+
+[project.scripts]
+capacityctl = "capacity_platform.cli.capacityctl:app"
+capacity-lab = "capacity_platform.lab.cli:app"
+capacity-scenario = "capacity_platform.scenarios.cli:app"
+capacity-watchdog = "capacity_platform.watchdog.main:app"
+capacity-service = "capacity_platform.shared.serve:main"
+
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/capacity_platform"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-ra --strict-markers"
+markers = [
+    "integration: needs Docker (Testcontainers PostgreSQL)",
+    "operational: needs a live kind cluster created by capacity-lab",
+    "model: needs the protected local Ollama gateway",
+    "e2e: critical governed workflow across the live platform (needs the kind lab)",
+]
+timeout = 300
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "RUF"]
+ignore = ["S101", "S311", "RUF001", "RUF002", "RUF003", "S608"]
+
+# FastAPI and Typer declare parameters with calls in defaults (Depends, Header, Option); that is
+# their documented pattern, not a shared-mutable-default bug.
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Header", "fastapi.Query", "typer.Option", "typer.Argument"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S105", "S106", "S108", "S603", "S607"]
+# "/tmp" here is a container mount path for an emptyDir volume, not a host temp file.
+"src/capacity_platform/lab/{manifests,infra_manifests,verify}.py" = ["S108"]
+
+[tool.mypy]
+python_version = "3.13"
+packages = ["capacity_platform"]
+mypy_path = "src"
+ignore_missing_imports = true
+warn_unused_ignores = true

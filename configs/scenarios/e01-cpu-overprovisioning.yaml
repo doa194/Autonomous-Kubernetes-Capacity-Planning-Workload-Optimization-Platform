@@ -1,0 +1,15 @@
+# E01 (S05 §11): sustained W04 tasks to observe request vs observed CPU. Rates are provisional.
+apiVersion: capacity.lab/v1alpha1
+kind: ExperimentScenario
+metadata: {id: e01-cpu-overprovisioning, revision: 1}
+spec:
+  targets: [{workloadId: w04-cpu-worker, profileRevision: 1, namespace: workloads-batch}]
+  execution: {seed: 42011, executionClass: moderate, mode: live, maxDurationSeconds: 900, maxParallelDrivers: 1}
+  phases:
+    - {id: warmup, durationSeconds: 60, measurement: excluded,
+       actions: [{kind: httpTraffic, target: w04-cpu-worker, operation: task, model: constant, requestsPerSecond: 1, profile: light}]}
+    - {id: sustained, durationSeconds: 600, measurement: included,
+       actions: [{kind: httpTraffic, target: w04-cpu-worker, operation: task, model: periodic, requestsPerSecond: 1,
+                  peakRequestsPerSecond: 3, periodSeconds: 120, profile: normal}]}
+    - {id: cooldown, durationSeconds: 60, measurement: excluded, actions: [{kind: idle}]}
+  safety: {maxInflightRequests: 8, requestTimeoutSeconds: 5, hostPressurePolicyRef: local-host-safe-v1}

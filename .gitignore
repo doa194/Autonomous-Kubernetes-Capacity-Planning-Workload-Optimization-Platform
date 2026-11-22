@@ -1,0 +1,22 @@
+# Python environment and caches
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# .NET build output
+workloads/dotnet/**/bin/
+workloads/dotnet/**/obj/
+workloads/dotnet/TestResults/
+
+# Downloaded, checksum-verified tools and manifests (re-fetched by `capacity-lab preflight`)
+.tools/bin/
+
+# Editor and OS files
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store

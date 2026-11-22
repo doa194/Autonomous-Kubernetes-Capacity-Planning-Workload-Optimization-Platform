@@ -1,0 +1,31 @@
+# Maps the supplied accepted source files to canonical slice IDs.
+# The original filenames are kept unchanged; consolidated files cover several slices.
+# Hashes let the release-gate check (RG01) detect a changed or swapped source.
+schemaVersion: spec-manifest/v1
+sources:
+  - file: "accepted/Autonomous_Kubernetes_Capacity_Planning_Master_Spec_Catalog(1).md"
+    canonical: master-catalog
+    sha256: fbff9b778107153c8748d7cfbd33b45121d437041d88193de9f9f04a2ceecc5f
+  - {file: accepted/S01_Product_Scope_Requirements_Operational_Model.md, canonical: [S01], sha256: 4712eb1bb197591a756385b94bb0abde813c5cbbd4931238568275390a0063ba}
+  - {file: accepted/S02_System_Architecture_Component_Contracts.md, canonical: [S02], sha256: db55825848201fcc42ac376801d919c96b9141e15c138a55038cfe4b36507864}
+  - {file: accepted/S03_Local_Kubernetes_Infrastructure_Cluster_Topology.md, canonical: [S03], sha256: 7093b8f2d30ac91479b99b2f1e3b45a87a9cd86829f2c36d09c223feaf471c04}
+  - {file: accepted/S04_Mixed_Language_Demonstration_Workloads.md, canonical: [S04], sha256: fd2c4daaa8aa75c064dc206eab14fb6113597cc78418b85148db1ea7be3d0d13}
+  - {file: accepted/S05_Workload_Simulation_Scenario_Orchestration.md, canonical: [S05], sha256: 0dd0734dcc2f97f6ac9c528a91989cec7d63f7c9b4b8ab7be16f5477c7c44e83}
+  - {file: accepted/S06_Identity_Authentication_Authorization.md, canonical: [S06], sha256: fb53071ff430981b4cfa8d1bd9a9ccd7e9817249cb3c89d6296f56349c850df4}
+  - {file: accepted/S07_Workload_Identity_Service_Security_Network_Isolation.md, canonical: [S07], sha256: bd89d615912e91647e6b66422cb7a30eddb4bf2ec666d93c51825cff1822fa7a}
+  - {file: accepted/S08_Secrets_Data_Protection_Security_Policy_Enforcement.md, canonical: [S08], sha256: b1f307e91313ebcff2ca4fb9e76231038caf02bfc8b605376f835f2fca6c3f96}
+  - {file: accepted/S09_AI_Agent_LLM_RAG_Tool_Security.md, canonical: [S09], sha256: e40be381e545d5d79f797a471fe4e84c1260c04ef89890f06fb893d5addf88d6}
+  - {file: accepted/S10_Software_Supply_Chain_Runtime_Security.md, canonical: [S10], sha256: b463efd237b4075c9ac431b69ea0896524cc807a32c5f5cff39d2016e396c30a}
+  - {file: accepted/S11_Cluster_State_Discovery_Resource_Inventory.md, canonical: [S11], sha256: d9993c6ba374e5e2d95a2741fd803a8cda31cce5498002fd063d16d223a45f27}
+  - {file: accepted/S12_Metrics_Collection_Historical_Telemetry.md, canonical: [S12], sha256: 9490b894756c161b9fd00019eaa51a04d50ae18c5332053a1cc9d25ae06769d7}
+  - {file: accepted/S13_Capacity_Data_Model_Intelligence_Storage.md, canonical: [S13], sha256: 595aa02307f3ce78ba7c12b9252b994cb59cf3d963b2e98d0e39e4b32a0b8081}
+  - {file: accepted/S14_Capacity_Forecasting_Demand_Modeling.md, canonical: [S14], sha256: be00bdf0e8aa7e48fe09f1cacdd9675d5f72852332a407978df645db1873f1e2}
+  - {file: accepted/S14_Forecasting_Model_Evaluation_Contracts.md, canonical: [S14-companion], sha256: e06fae69e07e40cff2b154d7c817767bac8433ac7c82996f687c19a68afe136d}
+  - {file: accepted/S15_Local_LLM_Inference_AI_Runtime.md, canonical: [S15], sha256: 0d16dfd08ebddb1c05e374e04abe2172cebbc03a615b5a1a100eeafb2b058085}
+  - {file: accepted/S16_Multi_Agent_Architecture_Orchestration.md, canonical: [S16], sha256: db1dfaf293dc3f9d397a3b915306d0a5a8656b1811bc7046850a08e8ce18f2b3}
+  - {file: accepted/S17_Agent_Tools_Context_Engineering.md, canonical: [S17], sha256: 71a5ba7b505d70818e38049cec5a9a33868d628510fd057a25a6594b737ebad9}
+  - {file: accepted/S18_Operational_Knowledge_Base_RAG_Architecture.md, canonical: [S18], sha256: 106e80a8a1bc44154d6714cbb173c701e84fca121515f373bbd9e6e8ffca4fc0}
+  - {file: accepted/S19-S20-S21-S22-S23.md, canonical: [S19, S20, S21, S22, S23, domain-e-companion], sha256: 76ae122defecc740c627ed9794367ab0064be24756f1de1696ad64d90a674168}
+  - {file: accepted/S24-26_Domain_F_Decision_Governance_Execution_S24-S26.md, canonical: [S24, S25, S26], sha256: b977094bdcdc1e51dce6415b093c8705fb3d06ed692ed78ebf1631b1a0302916}
+  - {file: accepted/S27-29_Domain_G_Product_Operations_Delivery_S27-S29.md, canonical: [S27, S28, S29], sha256: dfa1f8d10addbc0885faab7382be2d0d43efc97722931e6073466de254bc2883}
+  - {file: accepted/S30-32_Domain_H_Testing_Evaluation_Product_Readiness_S30-S32.md, canonical: [S30, S31, S32], sha256: 7f42020cf31eb50495a010eb69f481f4163c067554f2fe583f7e8099d7cd50bd}

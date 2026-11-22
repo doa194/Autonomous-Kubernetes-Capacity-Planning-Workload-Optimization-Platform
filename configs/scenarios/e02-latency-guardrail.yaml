@@ -1,0 +1,16 @@
+# E02 (S05 §3.1): W01 normal then bounded heavy open-loop HTTP. Rates are provisional.
+apiVersion: capacity.lab/v1alpha1
+kind: ExperimentScenario
+metadata: {id: e02-latency-guardrail, revision: 1}
+spec:
+  targets: [{workloadId: w01-latency-api, profileRevision: 1, namespace: workloads-critical}]
+  execution: {seed: 42017, executionClass: moderate, mode: live, maxDurationSeconds: 600, maxParallelDrivers: 1}
+  phases:
+    - {id: warmup, durationSeconds: 60, measurement: excluded,
+       actions: [{kind: httpTraffic, target: w01-latency-api, operation: compute, model: constant, requestsPerSecond: 5, profile: normal}]}
+    - {id: baseline, durationSeconds: 120, measurement: included,
+       actions: [{kind: httpTraffic, target: w01-latency-api, operation: compute, model: constant, requestsPerSecond: 15, profile: normal}]}
+    - {id: heavy, durationSeconds: 120, measurement: included,
+       actions: [{kind: httpTraffic, target: w01-latency-api, operation: compute, model: constant, requestsPerSecond: 25, profile: heavy}]}
+    - {id: cooldown, durationSeconds: 60, measurement: excluded, actions: [{kind: idle}]}
+  safety: {maxInflightRequests: 32, requestTimeoutSeconds: 3, hostPressurePolicyRef: local-host-safe-v1}
